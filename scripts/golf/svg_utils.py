@@ -5,6 +5,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from .config import AUTO_SCALE_FACTOR, PLAQUE_BASE_PREFIXES
+from .utils import get_val
 
 
 def ensure_upward_normals(mesh_data):
@@ -47,8 +48,15 @@ def get_world_bounds_center(obj):
     return ((min_x + max_x) / 2, (min_y + max_y) / 2)
 
 
-def sanitize_geometry(objects, props, output_collection):
-    """Convert curves to meshes, scale imported geometry, and center the layout."""
+def sanitize_geometry(objects, data_source, output_collection):
+    """Convert curves to meshes, scale imported geometry, and center the layout.
+
+    Args:
+        objects: Imported SVG objects to process.
+        data_source: Either a :class:`bpy.types.PropertyGroup` or a plain
+            :class:`dict`; resolved via :func:`~.utils.get_val`.
+        output_collection: The Blender collection to link processed objects into.
+    """
     if not objects:
         return []
 
@@ -93,23 +101,28 @@ def sanitize_geometry(objects, props, output_collection):
             (obj for obj in sanitized_objects if obj.name.startswith("Rough")), None
         )
 
-    if not props.use_manual_scale and anchor:
+    if not get_val(data_source, "use_manual_scale", False) and anchor:
         anchor_w = anchor.dimensions.x
         anchor_h = anchor.dimensions.y
 
-        width_ratio = props.plaque_width / anchor_w if anchor_w > 0 else None
-        height_ratio = props.plaque_height / anchor_h if anchor_h > 0 else None
+        plaque_width = get_val(data_source, "plaque_width", 100.0)
+        plaque_height = get_val(data_source, "plaque_height", 140.0)
+
+        width_ratio = plaque_width / anchor_w if anchor_w > 0 else None
+        height_ratio = plaque_height / anchor_h if anchor_h > 0 else None
 
         if width_ratio is not None and height_ratio is not None:
             scale_ratio = min(width_ratio, height_ratio)
         else:
             scale_ratio = width_ratio or height_ratio or 1.0
     else:
+        plaque_width = get_val(data_source, "plaque_width", 100.0)
+        plaque_height = get_val(data_source, "plaque_height", 140.0)
         max_svg_dim = max(
             max(obj.dimensions.x, obj.dimensions.y) for obj in sanitized_objects
         )
         scale_ratio = (
-            min(props.plaque_width, props.plaque_height) * AUTO_SCALE_FACTOR
+            min(plaque_width, plaque_height) * AUTO_SCALE_FACTOR
         ) / max_svg_dim
 
     scale_matrix = Matrix.Diagonal((scale_ratio, scale_ratio, 1.0, 1.0))
