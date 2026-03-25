@@ -30,6 +30,30 @@ _DEPTH_PROP_MAP = {
 }
 
 
+def _count_present_segments(objects):
+    """Count how many carveable segment prefixes are present in the SVG set."""
+    carveable_prefixes = [
+        prefix for prefix, (depth, _) in COLOR_MAP.items() if depth > 0
+    ]
+    return sum(
+        1
+        for prefix in carveable_prefixes
+        if any(obj.name.startswith(prefix) for obj in objects)
+    )
+
+
+def _resolve_plaque_thickness(props, objects):
+    """Return plaque thickness in mm based on either auto-layer or manual mode."""
+    if not getattr(props, "use_auto_thickness", False):
+        return props.plaque_thick
+
+    segment_count = _count_present_segments(objects)
+    base_layers = max(3, int(props.base_print_layers))
+    per_segment_layers = max(1, int(props.segment_print_layers))
+    total_layers = base_layers + (segment_count * per_segment_layers)
+    return props.print_layer_height * total_layers
+
+
 def carve_plaque(props):
     """Build the base plaque cube and Boolean-carve each SVG layer into it."""
     output_collection = ensure_output_collection()
@@ -45,6 +69,7 @@ def carve_plaque(props):
     ]
 
     all_svg_objs = sanitize_geometry(all_svg_objs, props, cutters_collection)
+    plaque_thickness = _resolve_plaque_thickness(props, all_svg_objs)
 
     plaque_base_svg = find_plaque_base(all_svg_objs)
     rough_obj = next(
@@ -68,7 +93,7 @@ def carve_plaque(props):
     base = bpy.context.active_object
     base.name = BASE_OBJECT_NAME
     move_object_to_collection(base, output_collection)
-    base.scale = (base_x, base_y, props.plaque_thick)
+    base.scale = (base_x, base_y, plaque_thickness)
     bpy.ops.object.transform_apply(scale=True)
     base.data.materials.append(setup_material("Rough", COLOR_MAP["Rough"][1]))
 
@@ -87,7 +112,7 @@ def carve_plaque(props):
             if getattr(props, "use_layer_depths", False) and prefix in _DEPTH_PROP_MAP:
                 raw_depth = getattr(props, _DEPTH_PROP_MAP[prefix], depth)
                 # Clamp: leave at least CUTTER_EPSILON of material at the base.
-                effective_depth = min(raw_depth, props.plaque_thick - CUTTER_EPSILON)
+                effective_depth = min(raw_depth, plaque_thickness - CUTTER_EPSILON)
             else:
                 effective_depth = depth
 
@@ -95,7 +120,7 @@ def carve_plaque(props):
             solidify.thickness = effective_depth + CUTTER_EPSILON
             solidify.offset = -1.0
 
-            cutter.location.z = props.plaque_thick / 2 + CUTTER_EPSILON
+            cutter.location.z = plaque_thickness / 2 + CUTTER_EPSILON
 
             if getattr(props, "use_floor_texture", False) and prefix in FLOOR_TEXTURE_CONFIG:
                 apply_floor_texture(cutter, prefix, solidify)
