@@ -50,6 +50,15 @@ def prepare_active_cutters(cutter, props, effective_depth):
     return active_cutters, use_top_taper, use_stepped_walls
 
 
+def prepare_strap_hole_cutter(cutter, plaque_thickness):
+    """Prepare a dedicated cutter that bores fully through the plaque."""
+    solidify = cutter.modifiers.new(name="Solidify", type="SOLIDIFY")
+    solidify.thickness = plaque_thickness + CUTTER_OVERLAP_MM
+    solidify.offset = -1.0
+    cutter.location.z = plaque_thickness / 2 + CUTTER_TOP_POKE_MM
+    return cutter
+
+
 def postprocess_cutter_geometry(
     active_cutter,
     prefix,

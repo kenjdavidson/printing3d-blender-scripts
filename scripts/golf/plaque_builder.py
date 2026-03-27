@@ -14,6 +14,7 @@ from .config import (
     CUTTER_EPSILON,
     PLAQUE_BASE_PREFIXES,
     PROTECTIVE_FRAME_MARGIN,
+    STRAP_HOLE_PREFIXES,
 )
 from .cutter_pipeline import (
     apply_solidify_if_present,
@@ -26,6 +27,7 @@ from .cutter_pipeline import (
     log_oversized_cutter,
     postprocess_cutter_geometry,
     prepare_active_cutters,
+    prepare_strap_hole_cutter,
     resolve_effective_depth,
 )
 from .materials import setup_material
@@ -62,7 +64,9 @@ def carve_plaque(props):
     clear_collection(output_collection)
     clear_collection(cutters_collection)
 
-    all_known_prefixes = tuple(COLOR_MAP.keys()) + PLAQUE_BASE_PREFIXES
+    all_known_prefixes = (
+        tuple(COLOR_MAP.keys()) + PLAQUE_BASE_PREFIXES + STRAP_HOLE_PREFIXES
+    )
     all_svg_objs = [
         obj
         for obj in bpy.data.objects
@@ -178,6 +182,24 @@ def carve_plaque(props):
 
                 if not cut_applied:
                     continue
+
+    strap_holes = [
+        obj for obj in all_svg_objs if any(obj.name.startswith(pre) for pre in STRAP_HOLE_PREFIXES)
+    ]
+    for strap_hole in strap_holes:
+        prepared_cutter = prepare_strap_hole_cutter(strap_hole, plaque_thickness)
+        apply_solidify_if_present(prepared_cutter)
+
+        if not is_valid_cutter_mesh(prepared_cutter):
+            continue
+
+        if is_oversized_cutter(prepared_cutter, max_cutter_x, max_cutter_y):
+            log_oversized_cutter(prepared_cutter, max_cutter_x, max_cutter_y)
+            continue
+
+        apply_boolean_cut(base, prepared_cutter, base_x, base_y, plaque_thickness)
+        prepared_cutter.display_type = "WIRE"
+        prepared_cutter.hide_render = True
 
     cleanup_base_mesh(base)
 
