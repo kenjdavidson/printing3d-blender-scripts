@@ -34,6 +34,19 @@ def extrude_text_objects(text_objects, plaque_thickness, extrusion_height, mater
         if not text_obj.data.materials:
             text_obj.data.materials.append(material)
 
+        # Triangulate the flat mesh before solidifying.  Letters with inner
+        # loops (R, O, A, B, D, P …) produce N-gon faces with holes after
+        # curve-to-mesh conversion.  Solidify applied directly to those faces
+        # leaves the inner-loop edges non-manifold, causing open boundaries
+        # that slicers like Cura report as "not watertight".  Triangulating
+        # first converts every face — including holed N-gons — into clean
+        # triangles so Solidify always closes into a proper solid volume.
+        tri = text_obj.modifiers.new(name="Triangulate", type="TRIANGULATE")
+        tri.quad_method = "BEAUTY"
+        tri.ngon_method = "BEAUTY"
+        bpy.context.view_layer.objects.active = text_obj
+        bpy.ops.object.modifier_apply(modifier=tri.name)
+
         # Add Solidify modifier to extrude the text outline upward.
         # use_even_offset prevents self-intersecting spikes at sharp corners;
         # use_quality_normals ensures consistent extrusion direction and avoids
@@ -45,7 +58,6 @@ def extrude_text_objects(text_objects, plaque_thickness, extrusion_height, mater
         solidify.use_quality_normals = True
 
         # Apply the modifier to bake the extrusion
-        bpy.context.view_layer.objects.active = text_obj
         bpy.ops.object.modifier_apply(modifier=solidify.name)
 
         # Move to output collection (alongside the base)
