@@ -34,6 +34,20 @@ def extrude_text_objects(text_objects, plaque_thickness, extrusion_height, mater
         if not text_obj.data.materials:
             text_obj.data.materials.append(material)
 
+        previous_active = bpy.context.view_layer.objects.active
+        bpy.context.view_layer.objects.active = text_obj
+
+        # Merge coincident (duplicate) vertices produced by the SVG curve
+        # importer.  When Blender converts spline curves to mesh it can emit
+        # the shared endpoint of two adjacent segments as two separate
+        # vertices at the same (or near-same) position.  Those degenerate
+        # zero-area edges/faces have unpredictable normals and Solidify can
+        # extrude them as small downward-pointing spikes.  A tiny merge
+        # threshold (0.0001 units) is safe for all letter geometry.
+        weld = text_obj.modifiers.new(name="Weld", type="WELD")
+        weld.merge_threshold = 0.0001
+        bpy.ops.object.modifier_apply(modifier=weld.name)
+
         # Triangulate the flat mesh before solidifying.  Letters with inner
         # loops (R, O, A, B, D, P …) produce N-gon faces with holes after
         # curve-to-mesh conversion.  Solidify applied directly to those faces
@@ -44,7 +58,6 @@ def extrude_text_objects(text_objects, plaque_thickness, extrusion_height, mater
         tri = text_obj.modifiers.new(name="Triangulate", type="TRIANGULATE")
         tri.quad_method = "BEAUTY"
         tri.ngon_method = "BEAUTY"
-        bpy.context.view_layer.objects.active = text_obj
         bpy.ops.object.modifier_apply(modifier=tri.name)
 
         # Add Solidify modifier to extrude the text outline upward.
@@ -63,6 +76,8 @@ def extrude_text_objects(text_objects, plaque_thickness, extrusion_height, mater
 
         # Apply the modifier to bake the extrusion
         bpy.ops.object.modifier_apply(modifier=solidify.name)
+
+        bpy.context.view_layer.objects.active = previous_active
 
         # Move to output collection (alongside the base)
         for collection in text_obj.users_collection:
