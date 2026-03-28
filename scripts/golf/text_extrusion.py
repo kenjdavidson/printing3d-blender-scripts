@@ -48,13 +48,21 @@ def extrude_text_objects(text_objects, plaque_thickness, extrusion_height, mater
         bpy.ops.object.modifier_apply(modifier=tri.name)
 
         # Add Solidify modifier to extrude the text outline upward.
-        # use_even_offset prevents self-intersecting spikes at sharp corners;
-        # use_quality_normals ensures consistent extrusion direction and avoids
-        # faces being pushed downward when winding is locally inconsistent.
+        # Use NON_MANIFOLD (Complex) mode instead of the default EXTRUDE mode.
+        # The simple EXTRUDE mode with use_even_offset compensates corner angles
+        # using a 1/cos(half-angle) factor; at very sharp *concave* corners
+        # (serif notches, inner angles of R, S, etc.) this factor blows up and
+        # produces self-intersecting triangular spike geometry on the side walls.
+        # NON_MANIFOLD mode uses a different algorithm that explicitly handles
+        # convex, concave, and open-boundary corners without these blowups.
+        # nonmanifold_boundary_mode = 'ROUND' caps open boundary edges cleanly,
+        # and use_quality_normals preserves the consistent upward extrusion
+        # direction established by ensure_upward_normals.
         solidify = text_obj.modifiers.new(name="Solidify", type="SOLIDIFY")
+        solidify.solidify_mode = "NON_MANIFOLD"
         solidify.thickness = extrusion_height
         solidify.offset = 1.0  # Extrude only upward (positive Z)
-        solidify.use_even_offset = True
+        solidify.nonmanifold_boundary_mode = "ROUND"
         solidify.use_quality_normals = True
 
         # Apply the modifier to bake the extrusion
