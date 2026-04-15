@@ -144,6 +144,8 @@ def main() -> None:
     import importlib
     runner_module = importlib.import_module(_RUNNERS[args.mode])
     if args.mode == "topology":
+        if not args.lidar:
+            raise ValueError("topology mode requires the --lidar argument")
         runner_module.run(params, lidar_path=args.lidar)
     else:
         runner_module.run(params)

@@ -41,7 +41,6 @@ def _load_elevations(lidar_path: str) -> list[float]:
                 for item in row:
                     try:
                         values.append(float(item))
-                        break
                     except ValueError:
                         continue
         return values

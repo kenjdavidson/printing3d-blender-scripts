@@ -162,7 +162,8 @@ async def run_generation(
     for arg_name, upload in (extra_uploads or {}).items():
         if upload is None:
             continue
-        suffix = Path(upload.filename or "").suffix or ".dat"
+        safe_name = Path(upload.filename or "").name
+        suffix = Path(safe_name).suffix or ".dat"
         extra_path = os.path.join(work_dir, f"{arg_name}{suffix}")
         with open(extra_path, "wb") as fh:
             fh.write(await upload.read())
