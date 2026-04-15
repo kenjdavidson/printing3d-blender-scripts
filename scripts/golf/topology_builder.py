@@ -31,6 +31,8 @@ def _iter_json_numbers(node):
 
 def _load_elevations(lidar_path: str) -> list[float]:
     path = Path(lidar_path)
+    if not path.is_file():
+        raise ValueError(f"LiDAR file not found: {lidar_path}")
     suffix = path.suffix.lower()
 
     if suffix == ".csv":
@@ -65,6 +67,7 @@ def build_topology_from_params(params: dict, lidar_path: str) -> None:
     topology_base_thickness = float(params.get("topology_base_thickness", req.plaque_thick))
 
     req.use_auto_thickness = False
+    # Enforce a minimum baseline before adding LiDAR-derived topology height.
     req.plaque_thick = max(req.plaque_thick, topology_base_thickness) + (lidar_span * lidar_height_scale)
 
     print(
