@@ -155,7 +155,8 @@ def carve_plaque(props):
         plaque_shape = getattr(props, "plaque_shape", "RECTANGLE")
         if plaque_shape == "CIRCLE":
             radius = min(base_x, base_y) / 2.0
-            # Update dimensions to reflect the actual circle diameter.
+            # Clamp both dimensions to the actual circle diameter so that the
+            # BuildContext oversized-cutter limits are calculated correctly.
             base_x = radius * 2.0
             base_y = radius * 2.0
             bpy.ops.mesh.primitive_cylinder_add(

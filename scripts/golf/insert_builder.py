@@ -831,6 +831,8 @@ def build_inserts(props):
         plaque_shape = getattr(props, "plaque_shape", "RECTANGLE")
         if plaque_shape == "CIRCLE":
             radius = min(base_x, base_y) / 2.0
+            # Clamp both dimensions to the actual circle diameter so that the
+            # oversized-cutter limits and border-ring math are calculated correctly.
             base_x = radius * 2.0
             base_y = radius * 2.0
 
