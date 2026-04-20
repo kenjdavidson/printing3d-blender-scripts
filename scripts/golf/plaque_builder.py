@@ -163,12 +163,12 @@ def carve_plaque(props):
                 depth=plaque_thickness,
                 vertices=64,
             )
+            base = bpy.context.active_object
         else:
             bpy.ops.mesh.primitive_cube_add(size=1)
             base = bpy.context.active_object
             base.scale = (base_x, base_y, plaque_thickness)
             bpy.ops.object.transform_apply(scale=True)
-        base = bpy.context.active_object
         base.name = BASE_OBJECT_NAME
         move_object_to_collection(base, output_collection)
 

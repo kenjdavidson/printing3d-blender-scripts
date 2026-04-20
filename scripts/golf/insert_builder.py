@@ -861,12 +861,12 @@ def build_inserts(props):
                 depth=plaque_thick,
                 vertices=64,
             )
+            base = bpy.context.active_object
         else:
             bpy.ops.mesh.primitive_cube_add(size=1)
             base = bpy.context.active_object
             base.scale = (base_x, base_y, plaque_thick)
             bpy.ops.object.transform_apply(scale=True)
-        base = bpy.context.active_object
         base.name = f"{BASE_OBJECT_NAME}_Inserts"
         move_object_to_collection(base, inserts_collection)
 

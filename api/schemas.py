@@ -179,6 +179,8 @@ class InsertSettings(BaseModel):
         default=6.0, gt=0,
         description="Base plaque thickness in millimetres.",
     )
+
+    # ── Print layer settings ─────────────────────────────────────────────────
     print_layer_height: float = Field(
         default=0.2, gt=0,
         description="Per-layer print height in millimetres.",
