@@ -34,6 +34,16 @@ class EngraveSettings(BaseModel):
         default=140.0, gt=0,
         description="Plaque height in millimetres.",
     )
+    plaque_shape: Literal["RECTANGLE", "CIRCLE"] = Field(
+        default="RECTANGLE",
+        description=(
+            "Shape of the plaque base when no Plaque_Base SVG object is present. "
+            "RECTANGLE (default) creates a rectangular slab. "
+            "CIRCLE creates a cylinder whose diameter equals min(plaque_width, plaque_height). "
+            "When a Plaque_Base SVG is imported its outline is always used directly, "
+            "so rounded rectangles and circles can also be supplied via SVG."
+        ),
+    )
     plaque_thick: float = Field(
         default=6.0, gt=0,
         description="Manual plaque thickness (mm). Used when use_auto_thickness is False.",
@@ -156,12 +166,19 @@ class InsertSettings(BaseModel):
         default=140.0, gt=0,
         description="Plaque height in millimetres.",
     )
+    plaque_shape: Literal["RECTANGLE", "CIRCLE"] = Field(
+        default="RECTANGLE",
+        description=(
+            "Shape of the plaque base when no Plaque_Base SVG object is present. "
+            "RECTANGLE (default) creates a rectangular slab. "
+            "CIRCLE creates a cylinder whose diameter equals min(plaque_width, plaque_height). "
+            "When a Plaque_Base SVG is imported its outline is always used directly."
+        ),
+    )
     plaque_thick: float = Field(
         default=6.0, gt=0,
         description="Base plaque thickness in millimetres.",
     )
-
-    # ── Print layer settings ─────────────────────────────────────────────────
     print_layer_height: float = Field(
         default=0.2, gt=0,
         description="Per-layer print height in millimetres.",
